@@ -23,7 +23,7 @@ jobs:
           fetch-depth: 0
       - name: 'Change base'
         env:
-          GITHUB_TOKEN: ${{ secrets.JENKINS_GITHUB_PAT }}
+          GITHUB_TOKEN: ${{ GITHUB_TOKEN }}
         run: |
           set -x
           pull_number=$(jq --raw-output .pull_request.number "${GITHUB_EVENT_PATH}")

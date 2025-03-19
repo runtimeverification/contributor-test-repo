@@ -28,16 +28,12 @@ jobs:
     steps:
       - name: 'Change base'
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -x
           # Get PR number based on event type
           pull_number=${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
-          curl -X PATCH \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            "https://api.github.com/repos/${{ github.repository }}/pulls/${pull_number}" \
-            -d '{"base":"develop"}'
+          gh pr edit $pull_number --base develop
 
   check-and-notify:
     if: github.event_name == 'pull_request' && github.event.pull_request.base.ref != 'develop'
@@ -45,11 +41,6 @@ jobs:
     steps:
       - name: 'Comment on PR'
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          curl -X POST \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
-            -d '{"body":"Thank you for your contribution! The PR NEEDS to point to '\''develop'\'' branch, not '\''master'\''.
-            A maintainer will also need to approve the PR."}'
+          gh pr comment ${{ github.event.pull_request.number }} --body "Thank you for your contribution! The PR NEEDS to point to 'develop' branch, not 'master'. A maintainer will also need to approve the PR."

@@ -21,7 +21,7 @@ permissions:
   actions: read
 jobs:
   check-and-notify:
-    if: github.event_name == 'pull_request' && github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
+    if: github.event_name == 'pull_request' && github.event.pull_request.base.ref != 'develop'
     runs-on: ubuntu-24.04
     steps:
       - name: 'Comment on PR'
@@ -30,7 +30,8 @@ jobs:
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
-            -d '{"body":"Thank you for your contribution! Since this is your first PR, a repository maintainer will need to manually run the base-change workflow to move this to the develop branch."}'
+            -d '{"body":"Thank you for your contribution! The PR NEEDS to point to 'develop' branch, not 'master'.
+            A maintainer will also need to approve the PR."}'
 
   change-base:
     if: |

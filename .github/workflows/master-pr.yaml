@@ -25,12 +25,14 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: 'Comment on PR'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           curl -X POST \
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
-            -d '{"body":"Thank you for your contribution! The PR NEEDS to point to 'develop' branch, not 'master'.
+            -d '{"body":"Thank you for your contribution! The PR NEEDS to point to '\''develop'\'' branch, not '\''master'\''.
             A maintainer will also need to approve the PR."}'
 
   change-base:

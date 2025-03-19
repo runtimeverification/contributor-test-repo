@@ -17,8 +17,8 @@ concurrency:
 permissions:
   contents: read
   pull-requests: write
-  checks: write
-  actions: read
+  actions: write
+  issues: write
 jobs:
   change-base:
     if: |

@@ -22,8 +22,6 @@ jobs:
           # fetch-depth 0 means deep clone the repo
           fetch-depth: 0
       - name: 'Change base'
-        env:
-          GITHUB_TOKEN: ${{ GITHUB_TOKEN }}
         run: |
           set -x
           pull_number=$(jq --raw-output .pull_request.number "${GITHUB_EVENT_PATH}")

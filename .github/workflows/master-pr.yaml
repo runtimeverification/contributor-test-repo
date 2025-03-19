@@ -3,32 +3,50 @@ on:
   pull_request:
     branches:
       - 'main'
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to change base'
+        required: true
+        type: string
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
 permissions:
   contents: read
   pull-requests: write
-
+  checks: write
+  actions: read
 jobs:
-
-  change-base:
-    name: 'Change base to develop branch'
+  check-and-notify:
+    if: github.event_name == 'pull_request' && github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
     runs-on: ubuntu-24.04
     steps:
-      - name: 'Check out code'
-        uses: actions/checkout@v4
-        with:
-          # fetch-depth 0 means deep clone the repo
-          fetch-depth: 0
+      - name: 'Comment on PR'
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            -d '{"body":"Thank you for your contribution! Since this is your first PR, a repository maintainer will need to manually run the base-change workflow to move this to the develop branch."}'
+
+  change-base:
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      (github.event_name == 'pull_request' && contains(fromJSON('["MEMBER", "OWNER", "COLLABORATOR"]'), github.event.pull_request.author_association))
+    runs-on: ubuntu-24.04
+    steps:
       - name: 'Change base'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -x
-          pull_number=$(jq --raw-output .pull_request.number "${GITHUB_EVENT_PATH}")
-          curl -X PATCH                                                               \
-            -H "Accept: application/vnd.github+json"                                  \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}"                                \
-            "https://api.github.com/repos/runtimeverification/contributor-test-repo/pulls/${pull_number}" \
+          # Get PR number based on event type
+          pull_number=${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
+          curl -X PATCH \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/${pull_number}" \
             -d '{"base":"develop"}'

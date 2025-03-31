@@ -21,9 +21,6 @@ permissions:
   issues: write
 jobs:
   change-base:
-    if: |
-      github.event_name == 'workflow_dispatch' || 
-      (github.event_name == 'pull_request' && contains(fromJSON('["MEMBER", "OWNER", "COLLABORATOR"]'), github.event.pull_request.author_association))
     runs-on: ubuntu-24.04
     steps:
       - name: 'Checkout'
@@ -35,9 +32,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -x
-          # Get PR number based on event type
-          pull_number=${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
-          gh pr edit $pull_number --base develop
+          pull_number=$(jq --raw-output .pull_request.number "${GITHUB_EVENT_PATH}")
+          curl -X PATCH                                                               \
+            -H "Accept: application/vnd.github+json"                                  \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}"                                \
+            "https://api.github.com/repos/runtimeverification/contributor-test-repo/pulls/${pull_number}" \
+            -d '{"base":"develop"}'
 
   check-and-notify:
     if: github.event_name == 'pull_request' && github.event.pull_request.base.ref != 'develop'
